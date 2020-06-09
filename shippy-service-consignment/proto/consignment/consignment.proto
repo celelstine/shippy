@@ -3,9 +3,9 @@ syntax = "proto3";
 package consignment;
 
 // we define a service that would be drive by grpc
-
 service ShippingService {
   rpc CreateConsignment(Consignment) returns (Response) {}
+   rpc GetConsignments(GetRequest) returns (Response) {}
 }
 
 // below we define models for message that we shall use in this service driven by protco
@@ -25,7 +25,13 @@ message Container {
   string user_id = 4;
 }
 
+// this would container the filter params
+message GetRequest {}
+
 message Response {
   bool created = 1;
   Consignment consignment = 2;
+
+  // send a list of consignments
+  repeated Consignment consignments = 3;
 }

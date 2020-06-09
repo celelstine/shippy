@@ -9,7 +9,7 @@ import (
 	"context"
 
 	// import the auto generate protoc file in the consignment service
-	pb "../shippy-service-consignment/proto/consignment"
+	pb "github.com/celelstine/shippy/shippy-service-consignment/proto/consignment"
 	"google.golang.org/grpc"
 )
 
@@ -55,4 +55,12 @@ func main() {
 		log.Fatalf("Could not greet: %v", err)
 	}
 	log.Printf("obj: %vCreated: %t", r, r.Created)
+
+	getAll, err := client.GetConsignments(context.Background(), &pb.GetRequest{})
+	if err != nil {
+		log.Fatalf("Could not list consignments: %v", err)
+	}
+	for index, v := range getAll.Consignments {
+		log.Println(index, v)
+	}
 }
