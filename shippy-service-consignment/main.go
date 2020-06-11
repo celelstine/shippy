@@ -3,10 +3,11 @@ package main
 import (
 	"context"
 	"log"
+	"sync"
 
 	// Import the generated protobuf code
 	pb "github.com/celelstine/shippy/shippy-service-consignment/proto/consignment"
-
+	vesselProto "github.com/celelstine/shippy/shippy-service-vessel/proto/vessel"
 	micro "github.com/micro/go-micro/v2"
 )
 
@@ -23,16 +24,16 @@ type repository interface {
 type Repository struct {
 	// use mutex to lock resources while we use them
 	// we need this to manually lock the resources, micro would handle this
-	// mu           sync.RWMutex
+	mu           sync.RWMutex
 	consignments []*pb.Consignment
 }
 
 // Create implement the create method of the repository interface to create consigment
 func (repo *Repository) Create(consignment *pb.Consignment) (*pb.Consignment, error) {
-	// repo.mu.Lock()
+	repo.mu.Lock()
 	updated := append(repo.consignments, consignment)
 	repo.consignments = updated
-	// repo.mu.Unlock()
+	repo.mu.Unlock()
 	return consignment, nil
 }
 
@@ -43,12 +44,28 @@ func (repo *Repository) GetAll() []*pb.Consignment {
 
 // define the service which would use the repository
 type consignmentService struct {
-	repo repository
+	repo         repository
+	vesselClient vesselProto.VesselService
 }
 
 // implement the create consigment method
 func (s *consignmentService) CreateConsignment(ctx context.Context, req *pb.Consignment, res *pb.Response) error {
 
+	// Here we call a client instance of our vessel service with our consignment weight,
+	// and the amount of containers as the capacity value
+	vesselResponse, err := s.vesselClient.FindAvailable(context.Background(), &vesselProto.Specification{
+		MaxWeight: req.Weight,
+		Capacity:  int32(len(req.Containers)),
+	})
+
+	if err != nil {
+		return err
+	}
+	log.Printf("Found vessel: %s \n", vesselResponse.Vessel.Name)
+
+	// We set the VesselId as the vessel we got back from our
+	// vessel service
+	req.VesselId = vesselResponse.Vessel.Id
 	// Save our consignment
 	consignment, err := s.repo.Create(req)
 	if err != nil {
@@ -85,8 +102,12 @@ func main() {
 	// Init will parse the command line flags.
 	service.Init()
 
+	vesselService := micro.NewService(micro.Name("shippy.client.vessel"))
+	vesselService.Init()
+	vesselClient := vesselProto.NewVesselService("shippy.service.vessel", vesselService.Client())
+
 	// Register service
-	if err := pb.RegisterShippingServiceHandler(service.Server(), &consignmentService{repo}); err != nil {
+	if err := pb.RegisterShippingServiceHandler(service.Server(), &consignmentService{repo, vesselClient}); err != nil {
 		log.Panic(err)
 	}
 

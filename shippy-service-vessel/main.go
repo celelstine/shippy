@@ -5,8 +5,8 @@ import (
 	"errors"
 	"log"
 
-	pb "github.com/celestine/shippy/shippy-service-vessel/proto/vessel"
-	"github.com/micro/go-micro/v2"
+	pb "github.com/celelstine/shippy/shippy-service-vessel/proto/vessel"
+	micro "github.com/micro/go-micro/v2"
 )
 
 // Repository for vessels
