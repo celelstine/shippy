@@ -16,3 +16,6 @@ The project is a demo microservice of shippy, it uses protoc and grpc
 - install these modules in the shippy-service-consignment module
     - go get github.com/golang/protobuf/protoc-gen-go@v1.3 (please use latest)
 
+
+### tips
+- to get the latest of a module run `go get -u <module>@latest
